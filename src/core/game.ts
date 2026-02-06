@@ -3,7 +3,7 @@
  * Main game class — owns the canvas, game loop, and scene management.
  */
 
-import { GameState, SceneId, CANVAS_W, CANVAS_H, RUN_DURATION } from './types';
+import { GameState, SceneId, CANVAS_W, CANVAS_H, RENDER_SCALE, RUN_DURATION } from './types';
 import { input } from './input';
 import * as menuScene from '../scenes/menu';
 import * as gameplayScene from '../scenes/gameplay';
@@ -63,19 +63,19 @@ export class Game {
   }
 
   private setupCanvas() {
-    const dpr = window.devicePixelRatio || 1;
-
-    // Set buffer size to logical × DPI for crisp rendering
-    this.canvas.width = CANVAS_W * dpr;
-    this.canvas.height = CANVAS_H * dpr;
+    // Use fixed RENDER_SCALE for consistent high-resolution rendering
+    // regardless of display DPI (always renders at 1920×1080)
+    this.canvas.width = CANVAS_W * RENDER_SCALE;
+    this.canvas.height = CANVAS_H * RENDER_SCALE;
 
     // Reset transform to identity, then scale context
-    // This maps logical coordinates → buffer coordinates
+    // This maps logical 960×540 coordinates → physical 1920×1080 buffer
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
-    this.ctx.scale(dpr, dpr);
+    this.ctx.scale(RENDER_SCALE, RENDER_SCALE);
 
-    // Maintain pixel-art style (no sub-pixel antialiasing)
-    this.ctx.imageSmoothingEnabled = false;
+    // Enable smoothing for crisp text rendering
+    this.ctx.imageSmoothingEnabled = true;
+    this.ctx.imageSmoothingQuality = 'high';
   }
 
   private resizeCanvas() {

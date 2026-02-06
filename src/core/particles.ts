@@ -7,6 +7,7 @@
 import { Vec2 } from './types';
 import { camera } from './camera';
 import { randRange, fromAngle } from '../utils/math';
+import { FONT_BODY } from '../ui/typography';
 
 interface Particle {
   x: number;
@@ -135,16 +136,24 @@ export function drawParticles(ctx: CanvasRenderingContext2D) {
   }
   ctx.globalAlpha = 1;
 
-  // Draw text particles
+  // Draw text particles with improved typography
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+  ctx.font = `bold ${14}px ${FONT_BODY}`;
   for (const tp of textParticles) {
     if (!camera.isVisible(tp.x, tp.y, 50)) continue;
     const alpha = Math.min(1, tp.life / 0.3);
     ctx.globalAlpha = alpha;
-    ctx.font = 'bold 14px monospace';
+
+    // Black shadow for visibility
     ctx.fillStyle = '#000';
     ctx.fillText(tp.text, tp.x + 1, tp.y + 1);
+
+    // Subtle glow effect for extra visibility in combat
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.fillText(tp.text, tp.x + 2, tp.y + 2);
+
+    // Main text
     ctx.fillStyle = tp.color;
     ctx.fillText(tp.text, tp.x, tp.y);
   }

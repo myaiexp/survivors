@@ -22,6 +22,11 @@ import { getAvailableUpgrades, upgradeDefs } from '../content/upgrades/index';
 import {
   normalize, sub, dist, scale, add, clamp, circlesOverlap, randRange,
 } from '../utils/math';
+import {
+  TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, TEXT_DISABLED,
+  TEXT_GOLD, TEXT_GOLD_BRIGHT, TEXT_DANGER,
+  TEXT_STYLES, drawShadowedText, setTextStyle
+} from '../ui/typography';
 
 // ── State ────────────────────────────────────────────────────────────
 
@@ -382,16 +387,20 @@ function handlePauseMenuInput(state: GameState) {
   if (input.consumeClick()) {
     const mouse = input.getMouseScreen();
 
-    // Resume button: 330x40 at center Y: 240
-    const resumeBtn = { x: 330, y: 240, w: 300, h: 40 };
+    // Button dimensions (must match drawPauseMenuOverlay)
+    const btnW = 300;
+    const btnH = 40;
+
+    // Resume button (centered)
+    const resumeBtn = { x: CANVAS_W / 2 - btnW / 2, y: 260, w: btnW, h: btnH };
     if (mouse.x >= resumeBtn.x && mouse.x <= resumeBtn.x + resumeBtn.w &&
         mouse.y >= resumeBtn.y && mouse.y <= resumeBtn.y + resumeBtn.h) {
       state.paused = false;
       return;
     }
 
-    // Quit to Menu button: 330x40 at center Y: 300
-    const quitBtn = { x: 330, y: 300, w: 300, h: 40 };
+    // Quit to Menu button (centered)
+    const quitBtn = { x: CANVAS_W / 2 - btnW / 2, y: 320, w: btnW, h: btnH };
     if (mouse.x >= quitBtn.x && mouse.x <= quitBtn.x + quitBtn.w &&
         mouse.y >= quitBtn.y && mouse.y <= quitBtn.y + quitBtn.h) {
       state.paused = false;
@@ -573,15 +582,13 @@ function drawLevelUpOverlay(ctx: CanvasRenderingContext2D, state: GameState) {
   ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
-  // Title
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = 'bold 28px monospace';
-  ctx.fillStyle = '#ffd700';
-  ctx.fillText('LEVEL UP!', CANVAS_W / 2, 70);
+  // Title with shadow
+  const titleStyle = { ...TEXT_STYLES.titleMedium, align: 'center' as CanvasTextAlign, baseline: 'middle' as CanvasTextBaseline };
+  drawShadowedText(ctx, 'LEVEL UP!', CANVAS_W / 2, 70, titleStyle);
 
-  ctx.font = '14px monospace';
-  ctx.fillStyle = '#aaa';
+  // Subtitle
+  const subtitleStyle = { ...TEXT_STYLES.bodyLarge, color: TEXT_SECONDARY, align: 'center' as CanvasTextAlign, baseline: 'middle' as CanvasTextBaseline };
+  setTextStyle(ctx, subtitleStyle);
   ctx.fillText(`Level ${state.player!.level} • Choose an upgrade`, CANVAS_W / 2, 100);
 
   // Upgrade cards
@@ -612,30 +619,28 @@ function drawLevelUpOverlay(ctx: CanvasRenderingContext2D, state: GameState) {
     ctx.strokeRect(cx, cardY, cardW, cardH);
 
     // Number key hint
-    ctx.fillStyle = '#555';
-    ctx.font = '12px monospace';
-    ctx.textAlign = 'left';
+    const hintStyle = { ...TEXT_STYLES.bodyMedium, color: TEXT_DISABLED, align: 'left' as CanvasTextAlign };
+    setTextStyle(ctx, hintStyle);
     ctx.fillText(`[${i + 1}]`, cx + 8, cardY + 20);
 
     // Icon
-    ctx.textAlign = 'center';
-    ctx.font = '36px monospace';
-    ctx.fillStyle = '#c9a959';
+    const iconStyle = { ...TEXT_STYLES.titleLarge, size: 36, color: TEXT_GOLD, align: 'center' as CanvasTextAlign, shadowColor: undefined };
+    setTextStyle(ctx, iconStyle);
     ctx.fillText(u.icon, cx + cardW / 2, cardY + 60);
 
     // Name
-    ctx.font = 'bold 16px monospace';
-    ctx.fillStyle = '#fff';
+    const nameStyle = { ...TEXT_STYLES.headerMedium, align: 'center' as CanvasTextAlign };
+    setTextStyle(ctx, nameStyle);
     ctx.fillText(u.name, cx + cardW / 2, cardY + 100);
 
-    // Category tag
-    ctx.font = '10px monospace';
-    ctx.fillStyle = u.category === 'stat' ? '#4a9' : u.category === 'weapon' ? '#f80' : '#a4f';
+    // Category tag (keep original color-coding)
+    const categoryStyle = { ...TEXT_STYLES.bodyTiny, color: u.category === 'stat' ? '#4a9' : u.category === 'weapon' ? '#f80' : '#a4f', align: 'center' as CanvasTextAlign };
+    setTextStyle(ctx, categoryStyle);
     ctx.fillText(u.category.toUpperCase(), cx + cardW / 2, cardY + 120);
 
     // Description
-    ctx.font = '12px monospace';
-    ctx.fillStyle = '#aaa';
+    const descStyle = { ...TEXT_STYLES.bodyMedium, color: TEXT_SECONDARY, align: 'center' as CanvasTextAlign };
+    setTextStyle(ctx, descStyle);
     const words = u.description.split(' ');
     let line = '';
     let ly = cardY + 150;
@@ -669,8 +674,8 @@ function drawPauseMenuOverlay(ctx: CanvasRenderingContext2D, state: GameState) {
     ctx.strokeRect(x, y, w, h);
 
     // Title
-    ctx.fillStyle = '#c9a959';
-    ctx.font = 'bold 14px monospace';
+    const boxTitleStyle = { ...TEXT_STYLES.headerSmall, align: 'left' as CanvasTextAlign, baseline: 'top' as CanvasTextBaseline };
+    setTextStyle(ctx, boxTitleStyle);
     ctx.fillText(title, x + 10, y + 20);
 
     return { contentX: x + 10, contentY: y + 35 };
@@ -682,54 +687,81 @@ function drawPauseMenuOverlay(ctx: CanvasRenderingContext2D, state: GameState) {
     return mouse.x >= x && mouse.x <= x + w && mouse.y >= y && mouse.y <= y + h;
   }
 
+  // Helper to truncate text if it exceeds max width
+  function truncateText(text: string, maxWidth: number): string {
+    if (ctx.measureText(text).width <= maxWidth) return text;
+    let truncated = text;
+    while (ctx.measureText(truncated + '...').width > maxWidth && truncated.length > 0) {
+      truncated = truncated.slice(0, -1);
+    }
+    return truncated + '...';
+  }
+
   // CENTER: Title and Buttons
-  ctx.fillStyle = '#ffd700';
-  ctx.font = 'bold 36px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText('PAUSED', CANVAS_W / 2, 200);
+  const pauseTitleStyle = { ...TEXT_STYLES.titleLarge, size: 36, color: TEXT_GOLD_BRIGHT, align: 'center' as CanvasTextAlign };
+  drawShadowedText(ctx, 'PAUSED', CANVAS_W / 2, 200, pauseTitleStyle);
 
-  ctx.fillStyle = '#888';
-  ctx.font = '12px monospace';
-  ctx.fillText('Press ESC to resume', CANVAS_W / 2, 220);
-
-  // Resume Button
-  const resumeBtn = { x: 330, y: 240, w: 300, h: 40 };
+  // Resume Button (centered)
+  const btnW = 300;
+  const btnH = 40;
+  const resumeBtn = { x: CANVAS_W / 2 - btnW / 2, y: 260, w: btnW, h: btnH };
   const resumeHover = isHovered(resumeBtn.x, resumeBtn.y, resumeBtn.w, resumeBtn.h);
   ctx.fillStyle = resumeHover ? '#2a3a4a' : '#1a2332';
   ctx.fillRect(resumeBtn.x, resumeBtn.y, resumeBtn.w, resumeBtn.h);
   ctx.strokeStyle = resumeHover ? '#c9a959' : '#666';
   ctx.lineWidth = resumeHover ? 2 : 1;
   ctx.strokeRect(resumeBtn.x, resumeBtn.y, resumeBtn.w, resumeBtn.h);
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 16px monospace';
-  ctx.fillText('RESUME', resumeBtn.x + resumeBtn.w / 2, resumeBtn.y + 25);
+  const resumeStyle = { ...TEXT_STYLES.headerMedium, color: TEXT_PRIMARY, align: 'center' as CanvasTextAlign, baseline: 'middle' as CanvasTextBaseline };
+  setTextStyle(ctx, resumeStyle);
+  ctx.fillText('RESUME', CANVAS_W / 2, resumeBtn.y + resumeBtn.h / 2);
 
-  // Quit to Menu Button
-  const quitBtn = { x: 330, y: 300, w: 300, h: 40 };
+  // Quit to Menu Button (centered)
+  const quitBtn = { x: CANVAS_W / 2 - btnW / 2, y: 320, w: btnW, h: btnH };
   const quitHover = isHovered(quitBtn.x, quitBtn.y, quitBtn.w, quitBtn.h);
   ctx.fillStyle = quitHover ? '#3a2020' : '#1a2332';
   ctx.fillRect(quitBtn.x, quitBtn.y, quitBtn.w, quitBtn.h);
   ctx.strokeStyle = quitHover ? '#c95959' : '#666';
   ctx.lineWidth = quitHover ? 2 : 1;
   ctx.strokeRect(quitBtn.x, quitBtn.y, quitBtn.w, quitBtn.h);
-  ctx.fillStyle = quitHover ? '#ff8888' : '#aaa';
-  ctx.fillText('QUIT TO MENU', quitBtn.x + quitBtn.w / 2, quitBtn.y + 25);
+  const quitStyle = { ...TEXT_STYLES.headerMedium, color: quitHover ? TEXT_DANGER : TEXT_SECONDARY, align: 'center' as CanvasTextAlign, baseline: 'middle' as CanvasTextBaseline };
+  setTextStyle(ctx, quitStyle);
+  ctx.fillText('QUIT TO MENU', CANVAS_W / 2, quitBtn.y + quitBtn.h / 2);
 
   ctx.textAlign = 'left'; // Reset alignment
 
-  // TOP: Character Info Box
-  const charBox = drawBox(290, 40, 380, 80, 'CHARACTER');
-  ctx.fillStyle = '#fff';
-  ctx.font = '16px monospace';
+  // TOP: Character Info Box (centered)
+  const charBox = drawBox(CANVAS_W / 2 - 190, 40, 380, 80, 'CHARACTER');
+  const charNameStyle = { ...TEXT_STYLES.headerMedium, align: 'left' as CanvasTextAlign, baseline: 'top' as CanvasTextBaseline };
+  setTextStyle(ctx, charNameStyle);
   const charDef = getCharacterDef(player.characterId);
   ctx.fillText(charDef.name, charBox.contentX, charBox.contentY);
-  ctx.fillStyle = '#aaa';
-  ctx.font = '12px monospace';
-  ctx.fillText(charDef.description, charBox.contentX, charBox.contentY + 20);
 
-  // RIGHT: Player Stats Box
-  const statsBox = drawBox(710, 150, 220, 280, 'PLAYER STATS');
-  ctx.font = '11px monospace';
+  // Word-wrap description to fit in box
+  const charDescStyle = { ...TEXT_STYLES.bodyMedium, color: TEXT_SECONDARY, align: 'left' as CanvasTextAlign };
+  setTextStyle(ctx, charDescStyle);
+  const maxDescWidth = 360; // Box width minus padding
+  const words = charDef.description.split(' ');
+  let line = '';
+  let descY = charBox.contentY + 20;
+  for (const word of words) {
+    const test = line + (line ? ' ' : '') + word;
+    if (ctx.measureText(test).width > maxDescWidth) {
+      ctx.fillText(line, charBox.contentX, descY);
+      line = word;
+      descY += 14;
+      if (descY > charBox.contentY + 45) break; // Stop if we exceed box height
+    } else {
+      line = test;
+    }
+  }
+  if (line && descY <= charBox.contentY + 45) {
+    ctx.fillText(line, charBox.contentX, descY);
+  }
+
+  // RIGHT: Player Stats Box (positioned relative to center)
+  const statsBox = drawBox(CANVAS_W / 2 + 190, 150, 220, 280, 'PLAYER STATS');
+  const statsStyle = { ...TEXT_STYLES.bodySmall, align: 'left' as CanvasTextAlign, baseline: 'top' as CanvasTextBaseline };
+  setTextStyle(ctx, statsStyle);
   let statsY = statsBox.contentY;
   const statsList = [
     `Max HP: ${player.stats.maxHp}`,
@@ -743,62 +775,63 @@ function drawPauseMenuOverlay(ctx: CanvasRenderingContext2D, state: GameState) {
     `XP Gain: ${(player.stats.xpGain * 100).toFixed(0)}%`,
     `Magnet: ${player.stats.magnetRange.toFixed(0)}`,
   ];
-  ctx.fillStyle = '#fff';
   for (const stat of statsList) {
     ctx.fillText(stat, statsBox.contentX, statsY);
     statsY += 16;
   }
 
-  // LEFT: Weapons & Upgrades Box
-  const weaponsBox = drawBox(30, 150, 220, 280, 'WEAPONS & UPGRADES');
-  ctx.font = 'bold 12px monospace';
-  ctx.fillStyle = '#c9a959';
+  // LEFT: Weapons & Upgrades Box (positioned relative to center)
+  const weaponsBox = drawBox(CANVAS_W / 2 - 410, 150, 220, 280, 'WEAPONS & UPGRADES');
+  const sectionHeaderStyle = { ...TEXT_STYLES.bodyMedium, weight: 'bold' as const, color: TEXT_GOLD, align: 'left' as CanvasTextAlign, baseline: 'top' as CanvasTextBaseline };
+  setTextStyle(ctx, sectionHeaderStyle);
   let leftY = weaponsBox.contentY;
   ctx.fillText('Weapons:', weaponsBox.contentX, leftY);
   leftY += 18;
 
-  ctx.font = '11px monospace';
-  ctx.fillStyle = '#fff';
+  const weaponListStyle = { ...TEXT_STYLES.bodySmall, align: 'left' as CanvasTextAlign, baseline: 'top' as CanvasTextBaseline };
+  setTextStyle(ctx, weaponListStyle);
   if (player.weapons.length === 0) {
-    ctx.fillStyle = '#666';
+    const noneStyle = { ...weaponListStyle, color: TEXT_DISABLED };
+    setTextStyle(ctx, noneStyle);
     ctx.fillText('None', weaponsBox.contentX, leftY);
     leftY += 16;
   } else {
     for (const wpn of player.weapons) {
       const wpnDef = getWeaponDef(wpn.defId);
-      ctx.fillText(`${wpnDef.name} Lv${wpn.level}`, weaponsBox.contentX, leftY);
+      const wpnText = truncateText(`${wpnDef.name} Lv${wpn.level}`, 200);
+      ctx.fillText(wpnText, weaponsBox.contentX, leftY);
       leftY += 16;
     }
   }
 
   leftY += 10;
-  ctx.font = 'bold 12px monospace';
-  ctx.fillStyle = '#c9a959';
+  setTextStyle(ctx, sectionHeaderStyle);
   ctx.fillText('Upgrades:', weaponsBox.contentX, leftY);
   leftY += 18;
 
   // Note: upgradeTakenCounts is local to gameplay.ts module
   // Show upgrade counts from the map
-  ctx.font = '11px monospace';
-  ctx.fillStyle = '#fff';
+  setTextStyle(ctx, weaponListStyle);
   if (upgradeTakenCounts.size === 0) {
-    ctx.fillStyle = '#666';
+    const noneStyle = { ...weaponListStyle, color: TEXT_DISABLED };
+    setTextStyle(ctx, noneStyle);
     ctx.fillText('None', weaponsBox.contentX, leftY);
   } else {
     for (const [upgradeId, count] of upgradeTakenCounts) {
       const upgrade = upgradeDefs.find(u => u.id === upgradeId);
       if (upgrade) {
-        ctx.fillText(`${upgrade.name} x${count}`, weaponsBox.contentX, leftY);
+        const upgradeText = truncateText(`${upgrade.name} x${count}`, 200);
+        ctx.fillText(upgradeText, weaponsBox.contentX, leftY);
         leftY += 16;
         if (leftY > weaponsBox.contentY + 220) break; // Prevent overflow
       }
     }
   }
 
-  // BOTTOM: Run Progress Box
-  const progressBox = drawBox(40, 450, 880, 70, 'RUN PROGRESS');
-  ctx.font = '12px monospace';
-  ctx.fillStyle = '#fff';
+  // BOTTOM: Run Progress Box (centered)
+  const progressBox = drawBox(CANVAS_W / 2 - 440, 450, 880, 70, 'RUN PROGRESS');
+  const progressStyle = { ...TEXT_STYLES.bodyMedium, align: 'left' as CanvasTextAlign, baseline: 'top' as CanvasTextBaseline };
+  setTextStyle(ctx, progressStyle);
 
   // Format time as MM:SS
   const mins = Math.floor(state.runTime / 60);

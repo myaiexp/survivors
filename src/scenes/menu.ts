@@ -8,6 +8,11 @@ import { input } from '../core/input';
 import { getUnlockedCharacters, characterDefs } from '../content/characters/index';
 import { getWeaponDef } from '../content/weapons/index';
 import { setCharacter } from './gameplay';
+import {
+  TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, TEXT_DISABLED,
+  TEXT_GOLD, TEXT_SUCCESS,
+  TEXT_STYLES, drawShadowedText, setTextStyle
+} from '../ui/typography';
 
 let selectedIndex = 0;
 let startFlash = 0;
@@ -80,18 +85,16 @@ export function update(state: GameState, dt: number) {
 
 export function draw(_state: GameState, ctx: CanvasRenderingContext2D) {
   // Background
-  ctx.fillStyle = '#0d1117';
+  ctx.fillStyle = '#0e0d0d';
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
-  // Title
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = 'bold 36px monospace';
-  ctx.fillStyle = '#c9a959';
-  ctx.fillText('SURVIVORS ROGUELITE', CANVAS_W / 2, 60);
+  // Title with shadowed text for depth
+  const titleStyle = { ...TEXT_STYLES.titleLarge, align: 'center' as CanvasTextAlign, baseline: 'middle' as CanvasTextBaseline };
+  drawShadowedText(ctx, 'SURVIVORS ROGUELITE', CANVAS_W / 2, 60, titleStyle);
 
-  ctx.font = '14px monospace';
-  ctx.fillStyle = '#666';
+  // Subtitle
+  const subtitleStyle = { ...TEXT_STYLES.bodyLarge, color: TEXT_TERTIARY, align: 'center' as CanvasTextAlign, baseline: 'middle' as CanvasTextBaseline };
+  setTextStyle(ctx, subtitleStyle);
   ctx.fillText('Choose your champion', CANVAS_W / 2, 100);
 
   // Character cards
@@ -110,7 +113,7 @@ export function draw(_state: GameState, ctx: CanvasRenderingContext2D) {
     const selected = i === selectedIndex;
 
     // Card background
-    ctx.fillStyle = selected ? '#1c2433' : '#12161e';
+    ctx.fillStyle = selected ? '#0e0d0d' : '#0e0d0d';
     ctx.fillRect(cx, cardY, cardW, cardH);
 
     // Border
@@ -126,14 +129,13 @@ export function draw(_state: GameState, ctx: CanvasRenderingContext2D) {
     ctx.strokeRect(cx + cardW / 2 - 15, cardY + 20, 30, 42);
 
     // Name
-    ctx.fillStyle = selected ? '#fff' : '#aaa';
-    ctx.font = 'bold 16px monospace';
-    ctx.textAlign = 'center';
+    const nameStyle = { ...TEXT_STYLES.headerMedium, color: selected ? TEXT_PRIMARY : TEXT_SECONDARY, align: 'center' as CanvasTextAlign };
+    setTextStyle(ctx, nameStyle);
     ctx.fillText(char.name, cx + cardW / 2, cardY + 80);
 
     // Description
-    ctx.fillStyle = '#777';
-    ctx.font = '10px monospace';
+    const descStyle = { ...TEXT_STYLES.bodyTiny, color: TEXT_TERTIARY, align: 'center' as CanvasTextAlign };
+    setTextStyle(ctx, descStyle);
     const desc = char.description;
     // Simple word wrap
     const words = desc.split(' ');
@@ -152,8 +154,8 @@ export function draw(_state: GameState, ctx: CanvasRenderingContext2D) {
     if (line) ctx.fillText(line, cx + cardW / 2, ly);
 
     // Starting weapon
-    ctx.fillStyle = '#5a8';
-    ctx.font = '11px monospace';
+    const weaponStyle = { ...TEXT_STYLES.bodySmall, color: TEXT_SUCCESS, align: 'center' as CanvasTextAlign };
+    setTextStyle(ctx, weaponStyle);
     ctx.fillText(`Weapon: ${weapon.name}`, cx + cardW / 2, cardY + cardH - 16);
   }
 
@@ -170,15 +172,13 @@ export function draw(_state: GameState, ctx: CanvasRenderingContext2D) {
   ctx.lineWidth = 2;
   ctx.strokeRect(btnX, btnY, btnW, btnH);
 
-  ctx.fillStyle = '#c9a959';
-  ctx.font = 'bold 18px monospace';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
+  const buttonStyle = { ...TEXT_STYLES.headerLarge, color: TEXT_GOLD, align: 'center' as CanvasTextAlign, baseline: 'middle' as CanvasTextBaseline };
+  setTextStyle(ctx, buttonStyle);
   ctx.fillText('START RUN', CANVAS_W / 2, btnY + btnH / 2);
 
   // Controls hint
-  ctx.fillStyle = '#444';
-  ctx.font = '11px monospace';
+  const hintStyle = { ...TEXT_STYLES.bodySmall, color: TEXT_DISABLED, align: 'center' as CanvasTextAlign };
+  setTextStyle(ctx, hintStyle);
   ctx.fillText('Click to select \u2022 Click START or press ENTER', CANVAS_W / 2, CANVAS_H - 24);
 }
 

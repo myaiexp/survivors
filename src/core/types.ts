@@ -222,8 +222,9 @@ export interface Scene {
 
 // ── Constants ─────────────────────────────────────────────────────────
 
-export const CANVAS_W = 960;
-export const CANVAS_H = 540;
+export const CANVAS_W = 960;  // Logical width (DPI scaling handles physical resolution)
+export const CANVAS_H = 540;  // Logical height
+export const RENDER_SCALE = 2; // Fixed render scale for crisp text rendering
 export const RUN_DURATION = 600; // 10 minutes in seconds
 export const XP_BASE = 10;      // XP needed for level 2
 export const XP_SCALE = 1.25;   // XP requirement growth per level
