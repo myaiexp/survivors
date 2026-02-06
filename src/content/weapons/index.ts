@@ -12,11 +12,15 @@
 import { WeaponDef } from '../../core/types';
 import { Sword } from './sword';
 import { Fireball } from './fireball';
+import { Lightning } from './lightning';
+import { FrostNova } from './frost_nova';
+import { Axe } from './axe';
+import { MagicMissile } from './magic_missile';
 
 export const weaponDefs: Map<string, WeaponDef> = new Map();
 
 // Register all weapons
-[Sword, Fireball].forEach(w => weaponDefs.set(w.id, w));
+[Sword, Fireball, Lightning, FrostNova, Axe, MagicMissile].forEach(w => weaponDefs.set(w.id, w));
 
 export function getWeaponDef(id: string): WeaponDef {
   const def = weaponDefs.get(id);
@@ -24,4 +28,4 @@ export function getWeaponDef(id: string): WeaponDef {
   return def;
 }
 
-export { Sword, Fireball };
+export { Sword, Fireball, Lightning, FrostNova, Axe, MagicMissile };

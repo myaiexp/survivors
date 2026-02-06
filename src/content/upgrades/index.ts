@@ -149,14 +149,215 @@ export const upgradeDefs: UpgradeDef[] = [
       p.hp = Math.min(p.hp + 30, p.maxHp);
     },
   },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // WEAPON UPGRADES
+  // ═══════════════════════════════════════════════════════════════════
+
+  // Sword (Knight's starting weapon)
+  {
+    id: 'weapon_sword',
+    name: 'Iron Sword',
+    description: 'Unlock: A reliable blade that sweeps in an arc.',
+    icon: '⚔️',
+    maxLevel: 1,
+    category: 'weapon',
+    weight: 10,
+    apply: (p: PlayerState, _lvl: number) => {
+      if (!p.weapons.find(w => w.defId === 'sword')) {
+        p.weapons.push({ defId: 'sword', level: 1, cooldownTimer: 0 });
+      }
+    },
+  },
+  {
+    id: 'up_sword',
+    name: 'Iron Sword+',
+    description: '+20% damage to Iron Sword',
+    icon: '⚔️+',
+    maxLevel: 4,
+    category: 'weapon',
+    weight: 8,
+    apply: (p: PlayerState, _lvl: number) => {
+      const weapon = p.weapons.find(w => w.defId === 'sword');
+      if (weapon) weapon.level++;
+    },
+  },
+
+  // Fireball (Mage's starting weapon)
+  {
+    id: 'weapon_fireball',
+    name: 'Fireball',
+    description: 'Unlock: Launches a blazing projectile at enemies.',
+    icon: '🔥',
+    maxLevel: 1,
+    category: 'weapon',
+    weight: 10,
+    apply: (p: PlayerState, _lvl: number) => {
+      if (!p.weapons.find(w => w.defId === 'fireball')) {
+        p.weapons.push({ defId: 'fireball', level: 1, cooldownTimer: 0 });
+      }
+    },
+  },
+  {
+    id: 'up_fireball',
+    name: 'Fireball+',
+    description: '+20% damage to Fireball',
+    icon: '🔥+',
+    maxLevel: 4,
+    category: 'weapon',
+    weight: 8,
+    apply: (p: PlayerState, _lvl: number) => {
+      const weapon = p.weapons.find(w => w.defId === 'fireball');
+      if (weapon) weapon.level++;
+    },
+  },
+
+  // Lightning Bolt
+  {
+    id: 'weapon_lightning',
+    name: 'Lightning Bolt',
+    description: 'Unlock: Strikes enemies with crackling energy. Fast and deadly.',
+    icon: '⚡',
+    maxLevel: 1,
+    category: 'weapon',
+    weight: 7,
+    apply: (p: PlayerState, _lvl: number) => {
+      if (!p.weapons.find(w => w.defId === 'lightning')) {
+        p.weapons.push({ defId: 'lightning', level: 1, cooldownTimer: 0 });
+      }
+    },
+  },
+  {
+    id: 'up_lightning',
+    name: 'Lightning Bolt+',
+    description: '+20% damage to Lightning Bolt',
+    icon: '⚡+',
+    maxLevel: 4,
+    category: 'weapon',
+    weight: 8,
+    apply: (p: PlayerState, _lvl: number) => {
+      const weapon = p.weapons.find(w => w.defId === 'lightning');
+      if (weapon) weapon.level++;
+    },
+  },
+
+  // Frost Nova
+  {
+    id: 'weapon_frost_nova',
+    name: 'Frost Nova',
+    description: 'Unlock: Releases a burst of ice shards in all directions.',
+    icon: '❄️',
+    maxLevel: 1,
+    category: 'weapon',
+    weight: 7,
+    apply: (p: PlayerState, _lvl: number) => {
+      if (!p.weapons.find(w => w.defId === 'frost_nova')) {
+        p.weapons.push({ defId: 'frost_nova', level: 1, cooldownTimer: 0 });
+      }
+    },
+  },
+  {
+    id: 'up_frost_nova',
+    name: 'Frost Nova+',
+    description: '+20% damage to Frost Nova',
+    icon: '❄️+',
+    maxLevel: 4,
+    category: 'weapon',
+    weight: 8,
+    apply: (p: PlayerState, _lvl: number) => {
+      const weapon = p.weapons.find(w => w.defId === 'frost_nova');
+      if (weapon) weapon.level++;
+    },
+  },
+
+  // Executioner's Axe
+  {
+    id: 'weapon_axe',
+    name: "Executioner's Axe",
+    description: 'Unlock: A massive axe that cleaves through enemies with brutal force.',
+    icon: '🪓',
+    maxLevel: 1,
+    category: 'weapon',
+    weight: 7,
+    apply: (p: PlayerState, _lvl: number) => {
+      if (!p.weapons.find(w => w.defId === 'axe')) {
+        p.weapons.push({ defId: 'axe', level: 1, cooldownTimer: 0 });
+      }
+    },
+  },
+  {
+    id: 'up_axe',
+    name: "Executioner's Axe+",
+    description: "+20% damage to Executioner's Axe",
+    icon: '🪓+',
+    maxLevel: 4,
+    category: 'weapon',
+    weight: 8,
+    apply: (p: PlayerState, _lvl: number) => {
+      const weapon = p.weapons.find(w => w.defId === 'axe');
+      if (weapon) weapon.level++;
+    },
+  },
+
+  // Magic Missile
+  {
+    id: 'weapon_magic_missile',
+    name: 'Magic Missile',
+    description: 'Unlock: A homing bolt of arcane energy that pierces through foes.',
+    icon: '✨',
+    maxLevel: 1,
+    category: 'weapon',
+    weight: 7,
+    apply: (p: PlayerState, _lvl: number) => {
+      if (!p.weapons.find(w => w.defId === 'magic_missile')) {
+        p.weapons.push({ defId: 'magic_missile', level: 1, cooldownTimer: 0 });
+      }
+    },
+  },
+  {
+    id: 'up_magic_missile',
+    name: 'Magic Missile+',
+    description: '+20% damage to Magic Missile',
+    icon: '✨+',
+    maxLevel: 4,
+    category: 'weapon',
+    weight: 8,
+    apply: (p: PlayerState, _lvl: number) => {
+      const weapon = p.weapons.find(w => w.defId === 'magic_missile');
+      if (weapon) weapon.level++;
+    },
+  },
 ];
 
 /** Get upgrade defs that the player hasn't maxed yet */
 export function getAvailableUpgrades(
+  player: PlayerState,
   takenCounts: Map<string, number>
 ): UpgradeDef[] {
+  const weaponCount = player.weapons.length;
+  const ownedWeaponIds = new Set(player.weapons.map(w => w.defId));
+
   return upgradeDefs.filter(u => {
+    // Check if already maxed
     const taken = takenCounts.get(u.id) ?? 0;
-    return taken < u.maxLevel;
+    if (taken >= u.maxLevel) return false;
+
+    // If weapon unlock upgrade
+    if (u.category === 'weapon' && u.id.startsWith('weapon_')) {
+      const weaponId = u.id.replace('weapon_', '');
+      // Hide if already owned
+      if (ownedWeaponIds.has(weaponId)) return false;
+      // Hide if 6 weapons already (cap enforcement)
+      if (weaponCount >= 6) return false;
+    }
+
+    // If weapon levelup upgrade
+    if (u.category === 'weapon' && u.id.startsWith('up_')) {
+      const weaponId = u.id.replace('up_', '');
+      // Only show if player owns this weapon
+      if (!ownedWeaponIds.has(weaponId)) return false;
+    }
+
+    return true;
   });
 }

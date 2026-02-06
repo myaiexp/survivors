@@ -34,12 +34,26 @@ class InputManager {
         y: (e.clientY - rect.top) * scaleY,
       };
     });
-    canvas.addEventListener('mousedown', () => {
-      this._mouseDown = true;
-      this._click = true;
+    canvas.addEventListener('mousedown', (e) => {
+      // Only track left-click (button 0)
+      if (e.button === 0) {
+        this._mouseDown = true;
+        this._click = true;
+      }
+      // Prevent right-click context menu from stealing focus
+      if (e.button === 2) {
+        e.preventDefault();
+      }
     });
-    canvas.addEventListener('mouseup', () => {
-      this._mouseDown = false;
+    canvas.addEventListener('mouseup', (e) => {
+      // Only track left-click (button 0)
+      if (e.button === 0) {
+        this._mouseDown = false;
+      }
+    });
+    // Prevent context menu from appearing on right-click
+    canvas.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
     });
     // Reset keys on window blur to prevent stuck keys
     window.addEventListener('blur', () => {

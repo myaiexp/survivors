@@ -132,6 +132,9 @@ export function update(state: GameState, dt: number) {
     return;
   }
 
+  // Clear any clicks from gameplay (prevents click-bleed into modals)
+  input.consumeClick();
+
   // ── Run Timer ──
   state.runTime += dt;
   state.wave = getWave();
@@ -334,7 +337,7 @@ function processContactDamage(player: PlayerState, dt: number) {
 
 function triggerLevelUp(state: GameState) {
   // Get available upgrades
-  const available = getAvailableUpgrades(upgradeTakenCounts);
+  const available = getAvailableUpgrades(state.player!, upgradeTakenCounts);
   if (available.length === 0) return;
 
   // Pick 3 random options
