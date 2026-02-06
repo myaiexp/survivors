@@ -34,10 +34,10 @@ export class Game {
 
   constructor() {
     this.canvas = document.getElementById('game') as HTMLCanvasElement;
-    this.canvas.width = CANVAS_W;
-    this.canvas.height = CANVAS_H;
     this.ctx = this.canvas.getContext('2d')!;
-    this.ctx.imageSmoothingEnabled = false;
+
+    // Initialize canvas with DPI scaling
+    this.setupCanvas();
 
     this.state = {
       scene: 'menu',
@@ -51,14 +51,38 @@ export class Game {
       gameResult: null,
     };
 
-    // Scale canvas to fit window
+    // Handle window resize and DPI changes
     this.resizeCanvas();
     window.addEventListener('resize', () => this.resizeCanvas());
+
+    // Detect DPI changes (e.g., dragging window between monitors)
+    const mediaQuery = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+    mediaQuery.addEventListener('change', () => this.resizeCanvas());
 
     input.init(this.canvas);
   }
 
+  private setupCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+
+    // Set buffer size to logical × DPI for crisp rendering
+    this.canvas.width = CANVAS_W * dpr;
+    this.canvas.height = CANVAS_H * dpr;
+
+    // Reset transform to identity, then scale context
+    // This maps logical coordinates → buffer coordinates
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.ctx.scale(dpr, dpr);
+
+    // Maintain pixel-art style (no sub-pixel antialiasing)
+    this.ctx.imageSmoothingEnabled = false;
+  }
+
   private resizeCanvas() {
+    // Recalculate DPI scaling (handles monitor changes)
+    this.setupCanvas();
+
+    // Calculate CSS display size (maintain aspect ratio)
     const maxW = window.innerWidth;
     const maxH = window.innerHeight;
     const scaleX = maxW / CANVAS_W;

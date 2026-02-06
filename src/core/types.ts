@@ -52,6 +52,8 @@ export interface PlayerState extends Entity {
   stats: PlayerStats;
   characterId: string;
   magnetRadius: number;
+  damageTaken: number;
+  damageDealt: number;
 }
 
 export interface PlayerStats {

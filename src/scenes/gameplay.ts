@@ -29,6 +29,7 @@ let enemies: Entity[] = [];
 let damageCooldowns = new Map<number, number>(); // enemy id -> cooldown for contact dmg
 let upgradeTakenCounts = new Map<string, number>();
 let selectedCharacterId = 'knight';
+let lastEscPress = 0; // For ESC key debouncing
 
 export function setCharacter(id: string) {
   selectedCharacterId = id;
@@ -87,6 +88,8 @@ export function enter(state: GameState) {
     stats,
     characterId: selectedCharacterId,
     magnetRadius: stats.magnetRange,
+    damageTaken: 0,
+    damageDealt: 0,
   };
 
   state.player = player;
@@ -98,9 +101,29 @@ export function update(state: GameState, dt: number) {
   const player = state.player!;
   if (!player.alive) return;
 
-  // Handle paused state (for level-up screen)
+  // ESC key toggles pause menu (debounced)
+  const now = performance.now();
+  if (input.isKeyDown('escape') && now - lastEscPress > 200) {
+    lastEscPress = now;
+    if (!state.paused) {
+      // Pause game (show menu)
+      state.paused = true;
+    } else if (state.pendingUpgrades.length === 0) {
+      // Resume if paused by menu (not level-up)
+      state.paused = false;
+    }
+    // If level-up active (pendingUpgrades > 0), ESC does nothing
+  }
+
+  // Handle paused state
   if (state.paused) {
-    handleLevelUpInput(state);
+    if (state.pendingUpgrades.length > 0) {
+      // Level-up overlay
+      handleLevelUpInput(state);
+    } else {
+      // Pause menu overlay
+      handlePauseMenuInput(state);
+    }
     return;
   }
 
@@ -240,6 +263,7 @@ function processHits(hits: HitResult[], player: PlayerState) {
     // Apply damage
     const dmg = Math.max(1, Math.round(hit.damage));
     enemy.hp -= dmg;
+    player.damageDealt += dmg;
 
     // Knockback
     enemy.knockbackVel.x += hit.knockbackDir.x * hit.knockback;
@@ -287,6 +311,7 @@ function processContactDamage(player: PlayerState, dt: number) {
       const data = getEnemyData(enemy);
       const dmg = Math.max(1, data.contactDamage - player.stats.armor);
       player.hp -= dmg;
+      player.damageTaken += dmg;
       player.invulnTimer = 0.2;
       player.flashTimer = 0.15;
 
@@ -353,6 +378,29 @@ function handleLevelUpInput(state: GameState) {
   }
 }
 
+function handlePauseMenuInput(state: GameState) {
+  if (input.consumeClick()) {
+    const mouse = input.getMouseScreen();
+
+    // Resume button: 330x40 at center Y: 240
+    const resumeBtn = { x: 330, y: 240, w: 300, h: 40 };
+    if (mouse.x >= resumeBtn.x && mouse.x <= resumeBtn.x + resumeBtn.w &&
+        mouse.y >= resumeBtn.y && mouse.y <= resumeBtn.y + resumeBtn.h) {
+      state.paused = false;
+      return;
+    }
+
+    // Quit to Menu button: 330x40 at center Y: 300
+    const quitBtn = { x: 330, y: 300, w: 300, h: 40 };
+    if (mouse.x >= quitBtn.x && mouse.x <= quitBtn.x + quitBtn.w &&
+        mouse.y >= quitBtn.y && mouse.y <= quitBtn.y + quitBtn.h) {
+      state.paused = false;
+      state.scene = 'menu';
+      return;
+    }
+  }
+}
+
 export function applyUpgrade(state: GameState, upgradeId: string) {
   const upgrade = upgradeDefs.find(u => u.id === upgradeId);
   if (!upgrade || !state.player) return;
@@ -408,9 +456,13 @@ export function draw(state: GameState, ctx: CanvasRenderingContext2D) {
   // ── Screen-space UI ──
   drawHud(ctx, player, state.runTime);
 
-  // ── Level-up overlay ──
-  if (state.paused && state.pendingUpgrades.length > 0) {
-    drawLevelUpOverlay(ctx, state);
+  // ── Overlays ──
+  if (state.paused) {
+    if (state.pendingUpgrades.length > 0) {
+      drawLevelUpOverlay(ctx, state);
+    } else {
+      drawPauseMenuOverlay(ctx, state);
+    }
   }
 }
 
@@ -599,6 +651,177 @@ function drawLevelUpOverlay(ctx: CanvasRenderingContext2D, state: GameState) {
     }
     if (line) ctx.fillText(line, cx + cardW / 2, ly);
   }
+}
+
+function drawPauseMenuOverlay(ctx: CanvasRenderingContext2D, state: GameState) {
+  const player = state.player!;
+
+  // Semi-transparent overlay
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+  // Helper function to draw info boxes
+  function drawBox(x: number, y: number, w: number, h: number, title: string) {
+    ctx.fillStyle = '#1a2332';
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = '#444';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, w, h);
+
+    // Title
+    ctx.fillStyle = '#c9a959';
+    ctx.font = 'bold 14px monospace';
+    ctx.fillText(title, x + 10, y + 20);
+
+    return { contentX: x + 10, contentY: y + 35 };
+  }
+
+  // Helper to check button hover
+  const mouse = input.getMouseScreen();
+  function isHovered(x: number, y: number, w: number, h: number): boolean {
+    return mouse.x >= x && mouse.x <= x + w && mouse.y >= y && mouse.y <= y + h;
+  }
+
+  // CENTER: Title and Buttons
+  ctx.fillStyle = '#ffd700';
+  ctx.font = 'bold 36px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('PAUSED', CANVAS_W / 2, 200);
+
+  ctx.fillStyle = '#888';
+  ctx.font = '12px monospace';
+  ctx.fillText('Press ESC to resume', CANVAS_W / 2, 220);
+
+  // Resume Button
+  const resumeBtn = { x: 330, y: 240, w: 300, h: 40 };
+  const resumeHover = isHovered(resumeBtn.x, resumeBtn.y, resumeBtn.w, resumeBtn.h);
+  ctx.fillStyle = resumeHover ? '#2a3a4a' : '#1a2332';
+  ctx.fillRect(resumeBtn.x, resumeBtn.y, resumeBtn.w, resumeBtn.h);
+  ctx.strokeStyle = resumeHover ? '#c9a959' : '#666';
+  ctx.lineWidth = resumeHover ? 2 : 1;
+  ctx.strokeRect(resumeBtn.x, resumeBtn.y, resumeBtn.w, resumeBtn.h);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 16px monospace';
+  ctx.fillText('RESUME', resumeBtn.x + resumeBtn.w / 2, resumeBtn.y + 25);
+
+  // Quit to Menu Button
+  const quitBtn = { x: 330, y: 300, w: 300, h: 40 };
+  const quitHover = isHovered(quitBtn.x, quitBtn.y, quitBtn.w, quitBtn.h);
+  ctx.fillStyle = quitHover ? '#3a2020' : '#1a2332';
+  ctx.fillRect(quitBtn.x, quitBtn.y, quitBtn.w, quitBtn.h);
+  ctx.strokeStyle = quitHover ? '#c95959' : '#666';
+  ctx.lineWidth = quitHover ? 2 : 1;
+  ctx.strokeRect(quitBtn.x, quitBtn.y, quitBtn.w, quitBtn.h);
+  ctx.fillStyle = quitHover ? '#ff8888' : '#aaa';
+  ctx.fillText('QUIT TO MENU', quitBtn.x + quitBtn.w / 2, quitBtn.y + 25);
+
+  ctx.textAlign = 'left'; // Reset alignment
+
+  // TOP: Character Info Box
+  const charBox = drawBox(290, 40, 380, 80, 'CHARACTER');
+  ctx.fillStyle = '#fff';
+  ctx.font = '16px monospace';
+  const charDef = getCharacterDef(player.characterId);
+  ctx.fillText(charDef.name, charBox.contentX, charBox.contentY);
+  ctx.fillStyle = '#aaa';
+  ctx.font = '12px monospace';
+  ctx.fillText(charDef.description, charBox.contentX, charBox.contentY + 20);
+
+  // RIGHT: Player Stats Box
+  const statsBox = drawBox(710, 150, 220, 280, 'PLAYER STATS');
+  ctx.font = '11px monospace';
+  let statsY = statsBox.contentY;
+  const statsList = [
+    `Max HP: ${player.stats.maxHp}`,
+    `Armor: ${player.stats.armor}`,
+    `Speed: ${player.stats.speed.toFixed(0)}`,
+    `Damage: ${(player.stats.damage * 100).toFixed(0)}%`,
+    `Atk Speed: ${(player.stats.attackSpeed * 100).toFixed(0)}%`,
+    `Area: ${(player.stats.area * 100).toFixed(0)}%`,
+    `Projectiles: +${player.stats.projectileCount}`,
+    `Luck: ${player.stats.luck.toFixed(1)}`,
+    `XP Gain: ${(player.stats.xpGain * 100).toFixed(0)}%`,
+    `Magnet: ${player.stats.magnetRange.toFixed(0)}`,
+  ];
+  ctx.fillStyle = '#fff';
+  for (const stat of statsList) {
+    ctx.fillText(stat, statsBox.contentX, statsY);
+    statsY += 16;
+  }
+
+  // LEFT: Weapons & Upgrades Box
+  const weaponsBox = drawBox(30, 150, 220, 280, 'WEAPONS & UPGRADES');
+  ctx.font = 'bold 12px monospace';
+  ctx.fillStyle = '#c9a959';
+  let leftY = weaponsBox.contentY;
+  ctx.fillText('Weapons:', weaponsBox.contentX, leftY);
+  leftY += 18;
+
+  ctx.font = '11px monospace';
+  ctx.fillStyle = '#fff';
+  if (player.weapons.length === 0) {
+    ctx.fillStyle = '#666';
+    ctx.fillText('None', weaponsBox.contentX, leftY);
+    leftY += 16;
+  } else {
+    for (const wpn of player.weapons) {
+      const wpnDef = getWeaponDef(wpn.defId);
+      ctx.fillText(`${wpnDef.name} Lv${wpn.level}`, weaponsBox.contentX, leftY);
+      leftY += 16;
+    }
+  }
+
+  leftY += 10;
+  ctx.font = 'bold 12px monospace';
+  ctx.fillStyle = '#c9a959';
+  ctx.fillText('Upgrades:', weaponsBox.contentX, leftY);
+  leftY += 18;
+
+  // Note: upgradeTakenCounts is local to gameplay.ts module
+  // Show upgrade counts from the map
+  ctx.font = '11px monospace';
+  ctx.fillStyle = '#fff';
+  if (upgradeTakenCounts.size === 0) {
+    ctx.fillStyle = '#666';
+    ctx.fillText('None', weaponsBox.contentX, leftY);
+  } else {
+    for (const [upgradeId, count] of upgradeTakenCounts) {
+      const upgrade = upgradeDefs.find(u => u.id === upgradeId);
+      if (upgrade) {
+        ctx.fillText(`${upgrade.name} x${count}`, weaponsBox.contentX, leftY);
+        leftY += 16;
+        if (leftY > weaponsBox.contentY + 220) break; // Prevent overflow
+      }
+    }
+  }
+
+  // BOTTOM: Run Progress Box
+  const progressBox = drawBox(40, 450, 880, 70, 'RUN PROGRESS');
+  ctx.font = '12px monospace';
+  ctx.fillStyle = '#fff';
+
+  // Format time as MM:SS
+  const mins = Math.floor(state.runTime / 60);
+  const secs = Math.floor(state.runTime % 60);
+  const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+  // Calculate DPS
+  const avgDps = state.runTime > 0 ? (player.damageDealt / state.runTime).toFixed(1) : '0.0';
+
+  // Layout in 3 columns
+  const col1X = progressBox.contentX;
+  const col2X = progressBox.contentX + 250;
+  const col3X = progressBox.contentX + 500;
+  const rowY = progressBox.contentY;
+
+  ctx.fillText(`Level: ${player.level}`, col1X, rowY);
+  ctx.fillText(`XP: ${player.xp} / ${player.xpToNext}`, col1X, rowY + 18);
+
+  ctx.fillText(`Kills: ${player.kills}`, col2X, rowY);
+  ctx.fillText(`Time: ${timeStr}`, col2X, rowY + 18);
+
+  ctx.fillText(`Dmg Taken: ${player.damageTaken}`, col3X, rowY);
+  ctx.fillText(`Avg DPS: ${avgDps}`, col3X, rowY + 18);
 }
 
 export function exit(_state: GameState) {
